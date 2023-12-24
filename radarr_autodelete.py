@@ -3,28 +3,14 @@ from argparse import ArgumentParser
 from datetime import datetime
 from tabnanny import verbose
 from dotenv import load_dotenv
-from pyarr import RadarrAPI
+from pyarr import SonarrAPI
 
-def is_movie_tagged(movie, filtertag): # Function Checks Movies For A Specific Tag
-    tags = movie['tags']
-    if tags != []: # Checks if tag array is not empty
-        for tag in tags: # Iterate over tags
-            texttag = radarr.get_tag(tag) # Get HumanReadable Tags
-            if texttag['label'] == filtertag: return True # If HumanReadable Tag matches Specified Filter Tag return True
-    else: return False # If there are no tags return False
-
-def should_movie_delete(movie, currentTime): # Function validates if a movie should be deleted
-    if 'movieFile' in movie: return should_available_movie_delete(movie, currentTime) # Checks if movie has been downloaded
-    elif deleteunavailablemovies: return should_unavailable_movie_delete(movie, currentTime)
-    else : return False
-
-def should_available_movie_delete(movie, currentTime):
-    moviefileObj = movie['movieFile']
-    added = moviefileObj['dateAdded'] # When movie has been downloaded
+def should_available_serie_delete(serie, currentTime):
+    added = serie['added'] # When serie has been downloaded
     return validate_timespan_for_delete(added, currentTime)
 
-def should_unavailable_movie_delete(movie, currentTime):
-    added = movie['added']
+def should_unavailable_serie_delete(serie, currentTime):
+    added = serie['added']
     return validate_timespan_for_delete(added, currentTime)
 
 def validate_timespan_for_delete(added, currentTime):
@@ -32,7 +18,7 @@ def validate_timespan_for_delete(added, currentTime):
     dateAddedToDatetime = datetime.strptime(unifiedAdded, '%Y-%m-%d') # More Formatting of date
     dateAddedInSeconds = int(dateAddedToDatetime.timestamp())
     savedTime = currentTime - dateAddedInSeconds # Seconds since download
-    if savedTime >= keepTime: return True # Checks if movie has been longer saved than wanted 
+    if savedTime >= keepTime: return True # Checks if serie has been longer saved than wanted
     else: return False
 
 def daysToSeconds(numberOfDays): # Function Converts Days To Seconds
@@ -42,43 +28,36 @@ def daysToSeconds(numberOfDays): # Function Converts Days To Seconds
 load_dotenv()
 
 parser = ArgumentParser()
-parser.add_argument('--keeptime', help='Time To Keep Movies In Days', default=30)
-parser.add_argument('--deleteunavailablemovies', help='Deletes Movies From Radarr, which could not be downloaded within wanted time frame', action='store_true')
-parser.add_argument('--filtertag', help='Specify tag which this script will look for. Movies with this tag will be deleted both from radarr and disk')
+parser.add_argument('--keeptime', help='Time To Keep series In Days', default=30)
+parser.add_argument('--deleteunavailableseries', help='Deletes series From Sonarr, which could not be downloaded within wanted time frame', action='store_true')
 parser.add_argument('--dryrun', help='Use this to see what results would look like, without loosing data', action='store_true')
-parser.add_argument('--verbose', help='Outputs movies deleted', action='store_true')
+parser.add_argument('--verbose', help='Outputs series deleted', action='store_true')
 args = parser.parse_args()
 
-host_url = os.getenv('RADARR_HOST')
+host_url = os.getenv('SONARR_HOST')
+api_key = os.getenv('SONARR_APIKEY')
 
-api_key = os.getenv('RADARR_APIKEY')
+sonarr = SonarrAPI(host_url, api_key)
+series = sonarr.get_series()
 
-radarr = RadarrAPI(host_url, api_key)
-
-movies = radarr.get_movie()
-
-dt = datetime.today() 
+dt = datetime.today()
 secondsNow = int(dt.timestamp()) # Now In Seconds
-keepTime = daysToSeconds(int(args.keeptime)) # Time To Keep Movies before Deleting
-filtertag = args.filtertag
+keepTime = daysToSeconds(int(args.keeptime)) # Time To Keep series before Deleting
 dryrun = bool(args.dryrun)
 verbose = bool(args.verbose)
-deleteunavailablemovies = bool(args.deleteunavailablemovies)
+deleteunavailableseries = bool(args.deleteunavailableseries)
 
 print('#### ' + dt.strftime("%m/%d/%Y, %H:%M:%S") + ' ####')
 
 if dryrun: print('----THIS IS A DRYRUN----')
 
-print('----RADARR_AUTODELETE----')
+print('----SONARR_AUTODELETE----')
 print('KEEPTIME: ' + str(args.keeptime))
-print('FILTERTAG: ' + filtertag)
 
-for movie in movies:
-    tagged_status = is_movie_tagged(movie, filtertag)
-    if tagged_status:
-        deletable = should_movie_delete(movie, secondsNow)
+for serie in series:
+        deletable = should_serie_delete(serie, secondsNow)
         if deletable:
-            if (dryrun | verbose) | (dryrun & verbose): print('Deleting ' + movie['title'])
-            if dryrun == False: radarr.del_movie(movie['id'], True)
+            if (dryrun | verbose) | (dryrun & verbose): print('Deleting ' + serie['title'])
+            if dryrun == False: sonarr.del_series(serie['id'], True)
 
 print('#### FINISHED ###')
