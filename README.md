@@ -27,12 +27,12 @@ The keeptime arguments only expects full days and defaults to 30 days and is opt
 \
 ```--deleteunavailablemovies```
 
-Without this flag movies will only be removed if the movies has been downloaded 30 days before run. If this flag is set movies will be deleted if they are older than 30 days and have not been downloaded yet. This flag is meant for clean up in cases where a movie cant be found within an expected time frame and quality.
+<sub>(untested after fork)</sup> Without this flag shows will only be removed if the show has been downloaded 30 days before run. If this flag is set shows will be deleted if they are older than 30 days and have not been downloaded yet. This flag is meant for clean up in cases where a show can't be found within an expected time frame and quality.
 
 \
 ```--dryrun```
 
-This is meant to show which movies would be deleted if the flag wasnt set. Omit to delete movies.
+Dry run. Show what would be deleted, but don't.
 
 \
 ```--verbose```
