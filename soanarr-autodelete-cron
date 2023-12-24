@@ -1,0 +1,2 @@
+0 3 * * * python3 /opt/scripts/sonarr_autodelete/radarr_autodelete.py --keeptime $KEEPTIME --deleteunavailablemovies --verbose
+
